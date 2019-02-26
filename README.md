@@ -16,7 +16,7 @@ It utilizes [postlight/mercury-parser](https://github.com/postlight/mercury-pars
 1. Install Yarn  
     `sudo npm i -g yarn`
 1. Install Mercury Parser  
-    `yarn global add @postlight/mercury-parser`
+    `sudo yarn global add @postlight/mercury-parser`
 
 ## Configuration
 
