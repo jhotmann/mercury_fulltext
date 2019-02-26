@@ -6,23 +6,16 @@ class mercury_fulltext extends Plugin
 	function about()
 		{
 		return array(
-			2.0,
-			"Try to get fulltext of the article using Self-hosted Mercury Parser API",
-			"https://github.com/HenryQW/mercury_fulltext/"
-		);
-		}
-
-	function flags()
-		{
-		return array(
-			"needs_curl" => true
+			2.1,
+			"Try to get fulltext of the article using Mercury Parser",
+			"https://github.com/jhotmann/mercury_fulltext/"
 		);
 		}
 
 	function save()
 		{
 		$this->host->set($this, "mercury_API", $_POST["mercury_API"]);
-		echo __("Your self-hosted Mercury Parser API Endpoint.");
+		echo __("API key saved.");
 		}
 
 	function init($host)
@@ -45,31 +38,6 @@ class mercury_fulltext extends Plugin
 		print "<div dojoType=\"dijit.layout.AccordionPane\" 
 		title=\"<i class='material-icons'>extension</i> " . __('Mercury_fulltext settings (mercury_fulltext)') . "\">";
 		print_notice("Enable the plugin for specific feeds in the feed editor.");
-		print "<form dojoType=\"dijit.form.Form\">";
-		print "<script type=\"dojo/method\" event=\"onSubmit\" args=\"evt\">
-			evt.preventDefault();
-			if (this.validate()) {
-				console.log(dojo.objectToQuery(this.getValues()));
-				new Ajax.Request('backend.php', {
-					parameters: dojo.objectToQuery(this.getValues()),
-					onComplete: function(transport) {
-						notify_info(transport.responseText);
-					}
-				});
-
-				// this.reset();
-
-			}
-			</script>";
-		print_hidden("op", "pluginhandler");
-		print_hidden("method", "save");
-		print_hidden("plugin", "mercury_fulltext");
-		$mercury_API = $this->host->get($this, "mercury_API");
-		print "<input dojoType='dijit.form.ValidationTextBox' required='1' name='mercury_API' value='" . $mercury_API . "'/>";
-		print "&nbsp;<label for=\"mercury_API\">" . __("Your self-hosted Mercury Parser API address (including the port number), eg https://mercury.parser.com:3000.") . "</label>";
-		print "<p>";
-		print_button("submit", __("Save"));
-		print "</form>";
 		$enabled_feeds = $this->host->get($this, "enabled_feeds");
 		if (!is_array($enabled_feeds)) $enabled_feeds = array();
 		$enabled_feeds = $this->filter_unknown_feeds($enabled_feeds);
@@ -118,7 +86,7 @@ class mercury_fulltext extends Plugin
 				array_push($enabled_feeds, $feed_id);
 				}
 			}
-			else
+		  else
 			{
 			if ($key !== FALSE)
 				{
@@ -139,16 +107,12 @@ class mercury_fulltext extends Plugin
 
 	function process_article($article)
 		{
-		$ch = curl_init();
-		$url = $article['link'];
-		$api_endpoint = $this->host->get($this, "mercury_API");
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-		curl_setopt($ch, CURLOPT_URL, $api_endpoint.'/parser?url=' . $url);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($ch, CURLOPT_ENCODING, "UTF-8");
-		$output = json_decode(curl_exec($ch));
-		curl_close($ch);
-		$extracted_content = $output->content;
+    $url = str_replace('&', '\&', $article['link']);
+    $filename = md5($url) . '.txt';
+    passthru('mercury-parser ' . $url . ' > ' . $filename);
+    $output = json_decode(file_get_contents($filename));
+    $extracted_content = $output->content;
+    unlink($filename);
 
 		if ($extracted_content)
 			{
